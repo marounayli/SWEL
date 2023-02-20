@@ -41,6 +41,7 @@ tag_sim_matrix = {"button": {"button": 1, "input": 0.75, "p": 0.1, "a": 0.6 , "s
                   "span": {"span": 1, "button": 0.5, "input": 0.5, "p": 0.5, "a": 0.5, "div":0},
                   "div":{"div":1,"button":0,"span":0, "a" :0, "input":0,"p":0}}
 
+elt_sizes = {"vsmall":20*20, "small": 100*100 , "medium" : 300*300, "large" :500*500}
 def calculate_elem_similarity(elt,ref_elt):
     return tag_sim_matrix[elt.name][ref_elt.name]
 
@@ -65,7 +66,7 @@ def LVdistance_values(elt,ref_elt):
 #     res =  calculate_elem_similarity(elt,ref_elem) + LVdistance_values(elt,ref_elem) + LVdistance_attrs(elt,ref_elem)
 #     # print(elt.attrs, elt.string, res)
 #     return res
-    
+data = []
 def calc_sim(elt, ref_elem):
     res = 0
     res += tag_sim_matrix[elt.name][ref_elem.name]
@@ -73,10 +74,10 @@ def calc_sim(elt, ref_elem):
         lv_distance = distance(elt.string, ref_elem.value)
         if lv_distance == 0:
             lv_distance = 0.5
-        res += (0.5*callmodel(elt.string, ref_elem.value) + 0.5*(1/lv_distance))
+        res += 0.5*(1/lv_distance)
         embeddings = model.encode([elt.strin , ref_elem.value], convert_to_tensor=True)
         cosine_scores = util.cos_sim(embeddings, embeddings)
-        res+=cosine_scores[0][0]*2
+        res+=float(cosine_scores[0][0]*2)
     for attr in ref_elem.attrs:
         if (attr in elt.attrs):
             res += (callmodel(elt.attrs[attr], ref_elem.attrs[attr]))
@@ -84,6 +85,9 @@ def calc_sim(elt, ref_elem):
             if (lv_distance == 0):
                 lv_distance = 0.5
             res += 3*(1/lv_distance)
+            embeddings = model.encode([elt.attrs[attr] , ref_elem.attrs[attr]], convert_to_tensor=True)
+            cosine_scores = util.cos_sim(embeddings, embeddings)
+            res+=float(cosine_scores[0][0]*2)
     print(elt.attrs, elt.string, res)
     return 0.1*res
 
@@ -99,13 +103,18 @@ def get_xpath(soup, ref_elt):
     mx = 0
     res = ""
     elts = soup.find_all(lambda tag: tag.name in [
-                         'button', 'a', 'p', 'input', 'span' , 'div'])
+                         'button', 'a', 'p', 'input', 'span'])
     eltx = None
     for elt in elts:
         sim = calc_sim(elt, ref_elt)
+        data.append(sim)
         if sim > mx:
             mx = sim
             res = xpath_soup(elt)
             eltx = elt
     print("The element is ", eltx, res) 
+    # Write the list to a file
+    with open('integers.txt', 'w') as file:
+        for num in data:
+            file.write(str(num) + '\n')
     return res
