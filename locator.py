@@ -114,7 +114,8 @@ def get_xpath(soup, ref_elt):
             eltx = elt
     print("The element is ", eltx, res) 
     # Write the list to a file
-    with open('integers.txt', 'w') as file:
+    with open('integers.txt', 'a+') as file:
+        file.write("####\n")
         for num in data:
             file.write(str(num) + '\n')
     return res
